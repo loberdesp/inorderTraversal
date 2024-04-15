@@ -2,61 +2,86 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cstdlib> // for rand()
+#include <cstdlib>
+#include <ctime>
 #include "mod.h"
 
-struct arrEl {
+struct arrEl {          //struktura do trzymania i mieszania pakietow w tablicy
     public:
         std::string s;
         int index;
 };
 
-int main()
-{
-    std::ifstream file("t.txt", std::ios::binary | std::ios::ate);
+std::string readText(const std::string& filename, int offset, int msg_size) {
+    std::ifstream file(filename);
 
-    if (!file.is_open())
-    {
-        std::cerr << "Error opening file." << std::endl;
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        exit(1);
+    }
+
+    std::string text;
+    std::getline(file, text, '\0'); // wczytaj caly plik do stringa
+    file.close();
+
+    if (offset == -1) {
+        std::srand(std::time(nullptr));
+        offset = std::rand() % text.length(); // wygeneruj losowy offset
+    }
+    offset %= text.length(); // zawin jesli offset jest wiekszy niz dlugosc tekstu
+
+    std::string message;
+    int remaining_size = msg_size;
+    while (remaining_size > 0) {
+        int chunk_size = std::min(remaining_size, static_cast<int>(text.length()) - offset);        //kopiuj tekst tak dlugo dopoki message.size() == msg_size
+        message += text.substr(offset, chunk_size);
+        remaining_size -= chunk_size;
+        offset = (offset + chunk_size) % text.length();
+    }
+    return message;                 //zwroc string z wiadomoscia odpowiedniej dlugosci
+}
+
+
+
+int main(int argc, char* argv[])
+{
+        if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " filename offset msg_size pach_size" << std::endl;
         return 1;
     }
 
-    std::streampos fileSize = file.tellg();
-    file.seekg(0, std::ios::beg);
+    std::string filename = argv[1];
+    int offset = std::stoi(argv[2]);
+    int msg_size = std::stoi(argv[3]);
+    int pack_size = std::stoi(argv[4]);
 
-    std::string text((std::istreambuf_iterator<char>(file)),
-                     (std::istreambuf_iterator<char>()));
+    //wczytaj tekst z pliku
+    std::string message = readText(filename, offset, msg_size);
 
-    file.close();
+    //policzenie rozmiaru tablicy
+    int arrSize = message.length()/pack_size;
 
-    int N = 8; // Number of parts
-    int partSize = fileSize / N; // Size of each part
-    int remainder = fileSize % N; // Remainder for the last part
+    // alokacja pamieci dla tablicy do podzielenie i mieszania tekstu
+    arrEl *parts = new arrEl[arrSize];
 
-    // Allocate memory for an array of strings to store parts of the text
-    arrEl *parts = new arrEl[N];
-
-    // Divide the text into parts
+    // podziel tekst na pakiety
     int start = 0;
-    for (int i = 0; i < N; ++i)
+    for (int i = 0; i < arrSize; ++i)
     {
-        int size = partSize;
-        if (i == N - 1)
-        {
-            size += remainder; // Add the remainder to the last part
-        }
+        int size = pack_size;
 
-        parts[i].s = text.substr(start, size); // Extract the part of the text
+
+        parts[i].s = message.substr(start, size); // wez zapisz pakiet do tablicy
         parts[i].index = i;
 
-        start += size; // Move to the next part
+        start += size; // nastepny pakiet
     }
 
-    // swap parts
-    for (int i = 0; i < N; ++i)
+    // zamiana pakietow
+    for (int i = 0; i < arrSize; ++i)
     {
-        // Swap current part with a random part
-        int random_index = rand() % N;
+        // zamiana obecnego pakietu z losowo wybranym pakietem
+        int random_index = rand() % pack_size;
         std::string tmp = parts[i].s;
         int in = parts[i].index;
         parts[i] = parts[random_index];
@@ -64,15 +89,18 @@ int main()
         parts[random_index].index = in;
     }
 
+    //inicjalizacja drzewa
     tree_module mod;
 
-    for(int i=0; i < N; ++i) {
+    //wyslanie pakietow do drzewa
+    for(int i=0; i < arrSize; ++i) {
         mod.send_packet(parts[i].s, parts[i].index);
     }
 
+    //wyswietlenie gotowej posortowanej wiadomosci
     mod.out_complete_message();
 
-    // Free memory for the array of strings
+    // zwolnienie pamieci tablicy
     delete[] parts;
 
     return 0;

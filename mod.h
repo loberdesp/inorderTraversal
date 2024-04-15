@@ -16,40 +16,40 @@ private:
 
     void insert_packet_rec(Node *&node, int index, std::string packet) { // rekursywna funkcja dodająca element do drzewa
         if (node == nullptr) {
-            // Create a new node if the current node is nullptr
+            // stworz nowy node jesli obecny jest rowny nullptr
             node = new Node;
             node->index = index;
             node->packet = packet;
             node->left = nullptr;
             node->right = nullptr;
         } else if (index <= node->index) {
-            // Recursively insert into the left subtree
+            // rekurdsynie dodaj pakiet do lewej galezi
             insert_packet_rec(node->left, index, packet);
         } else {
-            // Recursively insert into the right subtree
+            // rekursywnie dodaj pakiet do prawej galezi
             insert_packet_rec(node->right, index, packet);
         }
     }
 
 
-    void travel_tree(Node *node) {                                                // funkcja poruszająca się po całym drzewie aby wyświetlić jego zawartość w dobrej kolejnosci
+    void travel_tree(Node *node) {          // funkcja poruszająca się po całym drzewie aby wyświetlić jego zawartość w dobrej kolejnosci
         if (node != nullptr) {
-            // Traverse the left subtree
+            // wejdz w lewa galaz
             travel_tree(node->left);
             // Print the current node
             std::cout << "Index: " << node->index+1 << ", Packet: " << node->packet << std::endl;
-            // Traverse the right subtree
+            // wejdz w prawa galaz
             travel_tree(node->right);
         }
     }
 public:
-    tree_module() : root(nullptr) {} // constructor to initialize root
+    tree_module() : root(nullptr) {}    // kontstruktor inicjalizujący korzeń
 
     void send_packet(std::string packet, int index) { // wysyła pakiet, używa prywatnej funkcji insert_packet_rec
         insert_packet_rec(root, index, packet);
     }
 
-    void out_complete_message() {                            // zwraca kompletną wiadomość, używa prywatnej funkcji travel_tree
+    void out_complete_message() {                       // zwraca kompletną wiadomość, używa prywatnej funkcji travel_tree
         travel_tree(root);
     }
 
@@ -58,7 +58,7 @@ public:
         return true;
     }
 
-    // Function to clear the tree (deallocate memory)
+    // oczyszczenie drzewa (dealokacja)
     void clear_tree(Node* node) {
         if (node != nullptr) {
             clear_tree(node->left);
@@ -68,6 +68,6 @@ public:
     }
 
     ~tree_module() {
-        clear(); // call clear function to deallocate memory
+        clear();
     }
 };
