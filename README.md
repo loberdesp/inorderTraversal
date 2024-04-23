@@ -6,3 +6,6 @@ g++ driver.o -o program
 
 ./program
 ```
+
+
+apparently when you set msg_size to 10 it doesn't work XD
